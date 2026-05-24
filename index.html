@@ -323,24 +323,61 @@
       }
     }
 
-    /* ── Pricing tables ── */
-    const PRICES = {
-      wash:    { '9000': 600,  '12000': 700,  '18000': 900,  '24000': 1100, '36000': 1400 },
-      repair:  { '9000': 800,  '12000': 900,  '18000': 1100, '24000': 1400, '36000': 1800 },
-      install: { '9000': 1500, '12000': 1800, '18000': 2500, '24000': 3200, '36000': 4500 },
-    };
-    const TRAVEL = { '0-5': 0, '6-15': 100, '16-30': 200, '31+': 500 };
+    /* ── Pricing (loaded live from Google Sheet CSV) ── */
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRjveFnd_xC3MAh1wcGXDTGVy8vd2N7gPUcTLC178C23bLQ1ONc3nU4FjL_Uf28wBuGPtHcHk-JPX5g/pub?output=csv';
+    let PRICES    = {};
+    let BTU_SIZES = [];
+    let pricesReady = false;
 
+    async function loadPrices() {
+      try {
+        const res  = await fetch(CSV_URL);
+        const text = await res.text();
+        const rows = text.trim().split('\n').map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+        BTU_SIZES = rows[0].slice(1).filter(Boolean);
+        PRICES = {};
+        for (let i = 1; i < rows.length; i++) {
+          const [svc, ...vals] = rows[i];
+          if (!svc) continue;
+          const key = svc.toLowerCase();
+          PRICES[key] = {};
+          BTU_SIZES.forEach((btu, idx) => {
+            const p = Number(vals[idx]);
+            if (p > 0) PRICES[key][btu] = p;
+          });
+        }
+      } catch {
+        BTU_SIZES = ['9000','12000','18000','24000','36000'];
+        PRICES = {
+          wash:    {'9000':600,'12000':700,'18000':900,'24000':1100,'36000':1400},
+          repair:  {'9000':800,'12000':900,'18000':1100,'24000':1400,'36000':1800},
+          install: {'9000':1500,'12000':1800,'18000':2500,'24000':3200,'36000':4500},
+        };
+      }
+      pricesReady = true;
+      if (!document.querySelector('#serviceList > div')) {
+        document.getElementById('emptyState').innerHTML = `
+          <svg class="w-7 h-7 mx-auto mb-2.5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+          </svg>
+          <p class="text-[14px] text-muted">กดปุ่ม "เพิ่มรายการ" เพื่อเพิ่มรายการบริการ</p>`;
+      }
+    }
+
+    const TRAVEL        = { '0-5': 0, '6-15': 100, '16-30': 200, '31+': 500 };
     const SERVICE_LABEL = { wash: 'ล้างแอร์', repair: 'ซ่อมแอร์', install: 'ติดตั้งแอร์' };
-    const SIZE_LABEL    = { '9000': '9,000 BTU', '12000': '12,000 BTU', '18000': '18,000 BTU', '24000': '24,000 BTU', '36000': '36,000 BTU' };
     const DIST_LABEL    = { '0-5': '0–5 กม.', '6-15': '6–15 กม.', '16-30': '16–30 กม.', '31+': '31+ กม.' };
+    const btuLabel      = btu => `${Number(btu).toLocaleString()} BTU`;
 
     let uid = 0;
 
     /* ── Add a service row ── */
     function addItem() {
+      if (!pricesReady) { alert('กรุณารอโหลดข้อมูลราคาสักครู่'); return; }
       const id = ++uid;
       document.getElementById('emptyState').style.display = 'none';
+
+      const btuOptions = BTU_SIZES.map(b => `<option value="${b}">${btuLabel(b)}</option>`).join('');
 
       const row = document.createElement('div');
       row.id = `row-${id}`;
@@ -365,11 +402,7 @@
             class="w-full border border-subtle rounded-lg px-3 py-2 text-[14px] text-ink bg-white
                    focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1">
             <option value="">เลือกขนาด...</option>
-            <option value="9000">9,000 BTU</option>
-            <option value="12000">12,000 BTU</option>
-            <option value="18000">18,000 BTU</option>
-            <option value="24000">24,000 BTU</option>
-            <option value="36000">36,000 BTU</option>
+            ${btuOptions}
           </select>
         </div>
         <div>
@@ -503,7 +536,7 @@
           style="${i < services.length - 1 ? 'border-color:rgba(0,0,0,0.08)' : ''}">
           <div>
             <span class="text-ink">${SERVICE_LABEL[s.type]}</span>
-            <span class="text-muted ml-2 text-[13px]">${SIZE_LABEL[s.size]}</span>
+            <span class="text-muted ml-2 text-[13px]">${btuLabel(s.size)}</span>
           </div>
           <span class="font-medium text-ink">${s.price.toLocaleString()} ฿</span>
         </div>`).join('');
@@ -533,7 +566,7 @@
         address,
         serviceDate: thDate,
         serviceTime: time + ' น.',
-        services: services.map(s => `${SERVICE_LABEL[s.type]} ${SIZE_LABEL[s.size]}`).join(', '),
+        services: services.map(s => `${SERVICE_LABEL[s.type]} ${btuLabel(s.size)}`).join(', '),
         distance: DIST_LABEL[dist],
         serviceSum,
         travelFee,
@@ -552,13 +585,22 @@
       uid = 0;
     }
 
-    /* ── Init: set min date to today ── */
+    /* ── Init ── */
     document.getElementById('serviceDate').min = new Date().toISOString().split('T')[0];
-
-    /* ── Close modal when clicking backdrop ── */
     document.getElementById('resultModal').addEventListener('click', e => {
       if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
     });
+
+    // Show loading state then fetch prices from sheet
+    document.getElementById('emptyState').innerHTML = `
+      <div class="flex items-center justify-center gap-2">
+        <svg class="w-4 h-4 text-muted animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+        <p class="text-[14px] text-muted">กำลังโหลดข้อมูลราคาจาก Google Sheets...</p>
+      </div>`;
+    loadPrices();
   </script>
 
 </body>
