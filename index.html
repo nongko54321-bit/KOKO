@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KOKO Air Service — ระบบจองบริการแอร์</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            canvas: 'rgb(249,249,247)',
+            ink:    '#1A1A1A',
+            muted:  '#888780',
+            accent: '#F1EFE8',
+          },
+          fontFamily: {
+            sans: ['Inter', 'Sarabun', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    * { -webkit-font-smoothing: antialiased; }
+    body { font-family: 'Inter', 'Sarabun', system-ui, -apple-system, sans-serif; }
+    .border-subtle { border-color: rgba(0,0,0,0.12); }
+    .shadow-card   { box-shadow: 0 1px 3px rgba(0,0,0,0.10); }
+    .shadow-modal  { box-shadow: 0 4px 24px rgba(0,0,0,0.18); }
+    input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.45; cursor: pointer; }
+    .item-enter { animation: fadeSlide 0.2s ease; }
+    @keyframes fadeSlide { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+    @media print {
+      .no-print { display: none !important; }
+      #resultModal > div { box-shadow: none; max-height: none; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-canvas font-sans text-ink">
+
+  <!-- ───── Header ───── -->
+  <header class="bg-white border-b border-subtle sticky top-0 z-10">
+    <div class="max-w-2xl mx-auto px-5 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-[23px] font-semibold text-ink leading-snug">KOKO Air Service</h1>
+        <p class="text-[13px] text-muted">ระบบจองและคำนวนค่าบริการแอร์</p>
+      </div>
+      <div class="w-10 h-10 rounded-full bg-ink flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+            d="M12 3v18M3 12h18M5.636 5.636l12.728 12.728M18.364 5.636L5.636 18.364"/>
+        </svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- ───── Main ───── -->
+  <main class="max-w-2xl mx-auto px-4 py-8 space-y-4">
+
+    <!-- ── 1. ข้อมูลลูกค้า ── -->
+    <section class="bg-white rounded-xl shadow-card p-6">
+      <h2 class="text-[18px] font-semibold text-ink flex items-center gap-2 mb-5">
+        <svg class="w-5 h-5 text-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+        </svg>
+        ข้อมูลลูกค้า
+      </h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <div>
+          <label class="block text-[14px] font-medium text-ink mb-1.5">
+            ชื่อ–นามสกุล <span class="text-muted font-normal">*</span>
+          </label>
+          <input id="customerName" type="text" required autocomplete="name"
+            placeholder="กรอกชื่อ–นามสกุล"
+            class="w-full border border-subtle rounded-lg px-3 py-2 text-[14px] text-ink
+                   placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1">
+        </div>
+
+        <div>
+          <label class="block text-[14px] font-medium text-ink mb-1.5">
+            เบอร์โทรศัพท์ <span class="text-muted font-normal">*</span>
+          </label>
+          <input id="customerPhone" type="tel" required autocomplete="tel"
+            placeholder="0XX-XXX-XXXX"
+            class="w-full border border-subtle rounded-lg px-3 py-2 text-[14px] text-ink
+                   placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1">
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="block text-[14px] font-medium text-ink mb-1.5">
+            ที่อยู่ / สถานที่ให้บริการ <span class="text-muted font-normal">*</span>
+          </label>
+          <textarea id="customerAddress" rows="2" required
+            placeholder="กรอกที่อยู่สถานที่ให้บริการ"
+            class="w-full border border-subtle rounded-lg px-3 py-2 text-[14px] text-ink
+                   placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1 resize-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-[14px] font-medium text-ink mb-1.5">
+            วันที่นัดหมาย <span class="text-muted font-normal">*</span>
+          </label>
+          <input id="serviceDate" type="date" required
+            class="w-full border border-subtle rounded-lg px-3 py-2 text-[14px] text-ink
+                   focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1">
+        </div>
+
+        <div>
+          <label class="block text-[14px] font-medium text-ink mb-1.5">
+            เวลานัดหมาย <span class="text-muted font-normal">*</span>
+          </label>
+          <select id="serviceTime" required
+            class="w-full border border-subtle rounded-lg px-3 py-2 text-[14px] text-ink bg-white
+                   focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1">
+            <option value="" class="text-muted">เลือกช่วงเวลา</option>
+            <option value="08:00">08:00 น.</option>
+            <option value="09:00">09:00 น.</option>
+            <option value="10:00">10:00 น.</option>
+            <option value="11:00">11:00 น.</option>
+            <option value="13:00">13:00 น.</option>
+            <option value="14:00">14:00 น.</option>
+            <option value="15:00">15:00 น.</option>
+            <option value="16:00">16:00 น.</option>
+          </select>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── 2. รายการบริการ ── -->
+    <section class="bg-white rounded-xl shadow-card p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-[18px] font-semibold text-ink flex items-center gap-2">
+          <svg class="w-5 h-5 text-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
+                 M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+          รายการบริการ
+        </h2>
+        <button type="button" onclick="addItem()"
+          class="flex items-center gap-1.5 bg-ink text-white text-[13px] font-medium
+                 px-4 py-2 rounded-lg hover:opacity-75 transition-opacity no-print">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+          </svg>
+          เพิ่มรายการ
+        </button>
+      </div>
+
+      <!-- Dynamic items -->
+      <div id="serviceList" class="space-y-3"></div>
+
+      <!-- Empty state -->
+      <div id="emptyState" class="rounded-xl text-center py-10"
+           style="border: 1px dashed rgba(0,0,0,0.15);">
+        <svg class="w-7 h-7 mx-auto mb-2.5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+        </svg>
+        <p class="text-[14px] text-muted">กดปุ่ม "เพิ่มรายการ" เพื่อเพิ่มรายการบริการ</p>
+      </div>
+    </section>
+
+    <!-- ── 3. ระยะทาง ── -->
+    <section class="bg-white rounded-xl shadow-card p-6">
+      <h2 class="text-[18px] font-semibold text-ink flex items-center gap-2 mb-5">
+        <svg class="w-5 h-5 text-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        ระยะทางจากร้าน
+      </h2>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <!-- 0-5 -->
+        <label class="cursor-pointer">
+          <input type="radio" name="distance" value="0-5" class="sr-only peer">
+          <div class="border border-subtle rounded-lg p-3 text-center transition
+                      peer-checked:border-ink peer-checked:bg-accent hover:bg-accent">
+            <p class="text-[14px] font-medium text-ink">0–5 กม.</p>
+            <p class="text-[13px] text-muted mt-0.5">ฟรี</p>
+          </div>
+        </label>
+        <!-- 6-15 -->
+        <label class="cursor-pointer">
+          <input type="radio" name="distance" value="6-15" class="sr-only peer">
+          <div class="border border-subtle rounded-lg p-3 text-center transition
+                      peer-checked:border-ink peer-checked:bg-accent hover:bg-accent">
+            <p class="text-[14px] font-medium text-ink">6–15 กม.</p>
+            <p class="text-[13px] text-muted mt-0.5">+100 ฿</p>
+          </div>
+        </label>
+        <!-- 16-30 -->
+        <label class="cursor-pointer">
+          <input type="radio" name="distance" value="16-30" class="sr-only peer">
+          <div class="border border-subtle rounded-lg p-3 text-center transition
+                      peer-checked:border-ink peer-checked:bg-accent hover:bg-accent">
+            <p class="text-[14px] font-medium text-ink">16–30 กม.</p>
+            <p class="text-[13px] text-muted mt-0.5">+200 ฿</p>
+          </div>
+        </label>
+        <!-- 31+ -->
+        <label class="cursor-pointer">
+          <input type="radio" name="distance" value="31+" class="sr-only peer">
+          <div class="border border-subtle rounded-lg p-3 text-center transition
+                      peer-checked:border-ink peer-checked:bg-accent hover:bg-accent">
+            <p class="text-[14px] font-medium text-ink">31+ กม.</p>
+            <p class="text-[13px] text-muted mt-0.5">+500 ฿</p>
+          </div>
+        </label>
+      </div>
+    </section>
+
+    <!-- ── Calculate Button ── -->
+    <button type="button" onclick="calculate()"
+      class="no-print w-full bg-ink text-white text-[14px] font-semibold py-3.5 rounded-lg
+             hover:opacity-75 transition-opacity flex items-center justify-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01
+             M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+      </svg>
+      คำนวนค่าบริการและยืนยันการจอง
+    </button>
+
+  </main>
+
+  <!-- ───── Result Modal ───── -->
+  <div id="resultModal"
+    class="fixed inset-0 hidden z-50 flex items-center justify-center p-4"
+    style="background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);">
+
+    <div class="bg-white rounded-xl shadow-modal max-w-md w-full max-h-[92vh] overflow-y-auto">
+      <div class="p-6">
+
+        <!-- Success icon + booking number -->
+        <div class="mb-6">
+          <div class="w-10 h-10 rounded-full bg-ink flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+          <h3 class="text-[18px] font-semibold text-ink">ยืนยันการจองบริการ</h3>
+          <p id="bookingNumber" class="text-[13px] text-muted mt-1 font-mono"></p>
+        </div>
+
+        <!-- Detail sections injected by JS -->
+        <div id="bookingDetails" class="space-y-3"></div>
+
+        <!-- Action buttons -->
+        <div class="flex gap-3 mt-6 no-print">
+          <button onclick="window.print()"
+            class="flex-1 bg-white border border-subtle text-ink text-[14px] font-medium
+                   py-2.5 rounded-lg hover:bg-accent transition flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2
+                   m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5
+                   a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+            </svg>
+            พิมพ์ใบจอง
+          </button>
+          <button onclick="resetForm()"
+            class="flex-1 bg-ink text-white text-[14px] font-medium
+                   py-2.5 rounded-lg hover:opacity-75 transition flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            จองใหม่
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───── JavaScript ───── -->
+  <script>
+    /* ── Pricing tables ── */
+    const PRICES = {
+      wash:    { '9000': 500,  '12000': 600,  '18000': 800,  '24000': 1000 },
+      repair:  { '9000': 1000, '12000': 1100, '18000': 1300, '24000': 1500 },
+      install: { '9000': 1500, '12000': 1800, '18000': 2200, '24000': 2800 },
+    };
+    const TRAVEL = { '0-5': 0, '6-15': 100, '16-30': 200, '31+': 500 };
+
+    const SERVICE_LABEL = { wash: 'ล้างแอร์', repair: 'ซ่อมแอร์', install: 'ติดตั้งแอร์' };
+    const SIZE_LABEL    = { '9000': '9,000 BTU', '12000': '12,000 BTU', '18000': '18,000 BTU', '24000': '24,000 BTU' };
+    const DIST_LABEL    = { '0-5': '0–5 กม.', '6-15': '6–15 กม.', '16-30': '16–30 กม.', '31+': '31+ กม.' };
+
+    let uid = 0;
+
+    /* ── Add a service row ── */
+    function addItem() {
+      const id = ++uid;
+      document.getElementById('emptyState').style.display = 'none';
+
+      const row = document.createElement('div');
+      row.id = `row-${id}`;
+      row.className = 'item-enter grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto_auto] gap-3 items-end p-4 rounded-lg';
+      row.style.border = '1px solid rgba(0,0,0,0.10)';
+
+      row.innerHTML = `
+        <div>
+          <label class="block text-[13px] text-muted mb-1.5">ประเภทบริการ</label>
+          <select onchange="refreshPrice(${id})"
+            class="w-full border border-subtle rounded-lg px-3 py-2 text-[14px] text-ink bg-white
+                   focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1">
+            <option value="">เลือกบริการ...</option>
+            <option value="wash">ล้างแอร์</option>
+            <option value="repair">ซ่อมแอร์</option>
+            <option value="install">ติดตั้งแอร์</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[13px] text-muted mb-1.5">ขนาดแอร์</label>
+          <select onchange="refreshPrice(${id})"
+            class="w-full border border-subtle rounded-lg px-3 py-2 text-[14px] text-ink bg-white
+                   focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1">
+            <option value="">เลือกขนาด...</option>
+            <option value="9000">9,000 BTU</option>
+            <option value="12000">12,000 BTU</option>
+            <option value="18000">18,000 BTU</option>
+            <option value="24000">24,000 BTU</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[13px] text-muted mb-1.5">ราคา</label>
+          <div id="p-${id}"
+            class="border border-subtle rounded-lg px-3 py-2 text-[14px] text-muted bg-white min-h-[38px] flex items-center">
+            —
+          </div>
+        </div>
+        <div class="flex justify-end sm:justify-center pb-[1px]">
+          <button type="button" onclick="removeItem(${id})"
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-muted
+                   hover:text-ink hover:bg-accent transition flex-shrink-0 no-print">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      `;
+
+      document.getElementById('serviceList').appendChild(row);
+    }
+
+    /* ── Update price display for a row ── */
+    function refreshPrice(id) {
+      const row = document.getElementById(`row-${id}`);
+      const [typeEl, sizeEl] = row.querySelectorAll('select');
+      const priceEl = document.getElementById(`p-${id}`);
+      const type = typeEl.value, size = sizeEl.value;
+
+      if (type && size) {
+        priceEl.textContent = `${PRICES[type][size].toLocaleString()} ฿`;
+        priceEl.classList.replace('text-muted', 'text-ink');
+        priceEl.classList.add('font-medium');
+      } else {
+        priceEl.textContent = '—';
+        priceEl.classList.replace('text-ink', 'text-muted');
+        priceEl.classList.remove('font-medium');
+      }
+    }
+
+    /* ── Remove a service row ── */
+    function removeItem(id) {
+      document.getElementById(`row-${id}`).remove();
+      if (!document.querySelector('#serviceList > div')) {
+        document.getElementById('emptyState').style.display = '';
+      }
+    }
+
+    /* ── Generate booking number ── */
+    function makeBookingNo() {
+      const d = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const ymd = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+      const seq = String(1000 + Math.floor(Math.random() * 9000));
+      return `KK-${ymd}-${seq}`;
+    }
+
+    /* ── Calculate & show modal ── */
+    function calculate() {
+      const name    = document.getElementById('customerName').value.trim();
+      const phone   = document.getElementById('customerPhone').value.trim();
+      const address = document.getElementById('customerAddress').value.trim();
+      const date    = document.getElementById('serviceDate').value;
+      const time    = document.getElementById('serviceTime').value;
+
+      if (!name || !phone || !address || !date || !time) {
+        alert('กรุณากรอกข้อมูลลูกค้าให้ครบถ้วน');
+        return;
+      }
+
+      const rows = [...document.querySelectorAll('#serviceList > div')];
+      if (!rows.length) {
+        alert('กรุณาเพิ่มรายการบริการอย่างน้อย 1 รายการ');
+        return;
+      }
+
+      const services = [];
+      for (const row of rows) {
+        const [typeEl, sizeEl] = row.querySelectorAll('select');
+        if (!typeEl.value || !sizeEl.value) {
+          alert('กรุณาเลือกประเภทบริการและขนาดแอร์ให้ครบทุกรายการ');
+          return;
+        }
+        services.push({ type: typeEl.value, size: sizeEl.value, price: PRICES[typeEl.value][sizeEl.value] });
+      }
+
+      const distEl = document.querySelector('input[name="distance"]:checked');
+      if (!distEl) {
+        alert('กรุณาเลือกระยะทาง');
+        return;
+      }
+
+      const dist       = distEl.value;
+      const travelFee  = TRAVEL[dist];
+      const serviceSum = services.reduce((s, i) => s + i.price, 0);
+      const total      = serviceSum + travelFee;
+      const bookingNo  = makeBookingNo();
+
+      const thDate = new Date(date + 'T00:00:00').toLocaleDateString('th-TH', {
+        year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
+      });
+
+      /* ── Render detail sections ── */
+      const section = (title, body) => `
+        <div class="rounded-lg p-4 text-[14px]" style="border:1px solid rgba(0,0,0,0.12);">
+          <p class="font-medium text-ink mb-3">${title}</p>
+          ${body}
+        </div>`;
+
+      const row2 = (label, val) => `
+        <div class="flex justify-between py-1">
+          <span class="text-muted">${label}</span>
+          <span class="text-ink font-medium">${val}</span>
+        </div>`;
+
+      const customerSection = section('ข้อมูลลูกค้า', `
+        ${row2('ชื่อ–นามสกุล', name)}
+        ${row2('เบอร์โทร', phone)}
+        <div class="py-1">
+          <span class="text-muted">ที่อยู่</span>
+          <p class="text-ink mt-0.5">${address}</p>
+        </div>
+        ${row2('วันที่บริการ', thDate)}
+        ${row2('เวลา', time + ' น.')}
+      `);
+
+      const serviceRows = services.map((s, i) => `
+        <div class="flex justify-between items-center py-2
+          ${i < services.length - 1 ? 'border-b' : ''}"
+          style="${i < services.length - 1 ? 'border-color:rgba(0,0,0,0.08)' : ''}">
+          <div>
+            <span class="text-ink">${SERVICE_LABEL[s.type]}</span>
+            <span class="text-muted ml-2 text-[13px]">${SIZE_LABEL[s.size]}</span>
+          </div>
+          <span class="font-medium text-ink">${s.price.toLocaleString()} ฿</span>
+        </div>`).join('');
+
+      const serviceSection = section('รายการบริการ', serviceRows);
+
+      const travelDisplay = travelFee > 0 ? `+${travelFee.toLocaleString()} ฿` : 'ฟรี';
+      const summarySection = section('สรุปค่าบริการ', `
+        ${row2('ค่าบริการรวม', serviceSum.toLocaleString() + ' ฿')}
+        ${row2(`ค่าเดินทาง (${DIST_LABEL[dist]})`, travelDisplay)}
+        <div class="flex justify-between pt-3 mt-1" style="border-top:1px solid rgba(0,0,0,0.12);">
+          <span class="font-semibold text-ink">ยอดรวมทั้งหมด</span>
+          <span class="font-semibold text-[18px] text-ink">${total.toLocaleString()} ฿</span>
+        </div>
+      `);
+
+      document.getElementById('bookingNumber').textContent = `หมายเลขจอง: ${bookingNo}`;
+      document.getElementById('bookingDetails').innerHTML = customerSection + serviceSection + summarySection;
+      document.getElementById('resultModal').classList.remove('hidden');
+    }
+
+    /* ── Reset form ── */
+    function resetForm() {
+      document.getElementById('resultModal').classList.add('hidden');
+      ['customerName','customerPhone','customerAddress','serviceDate','serviceTime']
+        .forEach(id => { document.getElementById(id).value = ''; });
+      document.querySelectorAll('input[name="distance"]').forEach(r => r.checked = false);
+      document.getElementById('serviceList').innerHTML = '';
+      document.getElementById('emptyState').style.display = '';
+      uid = 0;
+    }
+
+    /* ── Init: set min date to today ── */
+    document.getElementById('serviceDate').min = new Date().toISOString().split('T')[0];
+
+    /* ── Close modal when clicking backdrop ── */
+    document.getElementById('resultModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
+    });
+  </script>
+
+</body>
+</html>
