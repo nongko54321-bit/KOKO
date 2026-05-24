@@ -41,7 +41,8 @@ function doPost(e) {
       sheet.setFrozenRows(1);
     }
 
-    const d = JSON.parse(e.postData.contents);
+    const raw = (e.parameter && e.parameter.payload) ? e.parameter.payload : e.postData.contents;
+    const d = JSON.parse(raw);
     sheet.appendRow([
       d.bookingNo,
       d.bookingDate,
