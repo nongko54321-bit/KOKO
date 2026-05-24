@@ -329,33 +329,39 @@
     let BTU_SIZES = [];
     let pricesReady = false;
 
-    async function loadPrices() {
+    /* silent=true = background refresh, ไม่แสดง spinner */
+    async function loadPrices(silent = false) {
       try {
-        const res  = await fetch(CSV_URL);
+        /* cache:'no-cache' ทำให้ดึงราคาใหม่เสมอ ไม่ใช้ cache เก่า */
+        const res  = await fetch(CSV_URL + '&t=' + Date.now(), { cache: 'no-cache' });
         const text = await res.text();
         const rows = text.trim().split('\n').map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
-        BTU_SIZES = rows[0].slice(1).filter(Boolean);
-        PRICES = {};
+        const newBTU  = rows[0].slice(1).filter(Boolean);
+        const newPrices = {};
         for (let i = 1; i < rows.length; i++) {
           const [svc, ...vals] = rows[i];
           if (!svc) continue;
           const key = svc.toLowerCase();
-          PRICES[key] = {};
-          BTU_SIZES.forEach((btu, idx) => {
+          newPrices[key] = {};
+          newBTU.forEach((btu, idx) => {
             const p = Number(vals[idx]);
-            if (p > 0) PRICES[key][btu] = p;
+            if (p > 0) newPrices[key][btu] = p;
           });
         }
+        BTU_SIZES = newBTU;
+        PRICES    = newPrices;
       } catch {
-        BTU_SIZES = ['9000','12000','18000','24000','36000'];
-        PRICES = {
-          wash:    {'9000':600,'12000':700,'18000':900,'24000':1100,'36000':1400},
-          repair:  {'9000':800,'12000':900,'18000':1100,'24000':1400,'36000':1800},
-          install: {'9000':1500,'12000':1800,'18000':2500,'24000':3200,'36000':4500},
-        };
+        if (!pricesReady) {
+          BTU_SIZES = ['9000','12000','18000','24000','36000'];
+          PRICES = {
+            wash:    {'9000':600,'12000':700,'18000':900,'24000':1100,'36000':1400},
+            repair:  {'9000':800,'12000':900,'18000':1100,'24000':1400,'36000':1800},
+            install: {'9000':1500,'12000':1800,'18000':2500,'24000':3200,'36000':4500},
+          };
+        }
       }
       pricesReady = true;
-      if (!document.querySelector('#serviceList > div')) {
+      if (!silent && !document.querySelector('#serviceList > div')) {
         document.getElementById('emptyState').innerHTML = `
           <svg class="w-7 h-7 mx-auto mb-2.5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
@@ -591,7 +597,7 @@
       if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
     });
 
-    // Show loading state then fetch prices from sheet
+    // Show loading state then fetch prices — refresh ทุก 60 วินาทีเพื่อดึงราคาล่าสุด
     document.getElementById('emptyState').innerHTML = `
       <div class="flex items-center justify-center gap-2">
         <svg class="w-4 h-4 text-muted animate-spin" fill="none" viewBox="0 0 24 24">
@@ -600,7 +606,8 @@
         </svg>
         <p class="text-[14px] text-muted">กำลังโหลดข้อมูลราคาจาก Google Sheets...</p>
       </div>`;
-    loadPrices();
+    loadPrices(false);
+    setInterval(() => loadPrices(true), 60000); // background refresh ทุก 60 วินาที
   </script>
 
 </body>
