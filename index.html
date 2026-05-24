@@ -255,8 +255,11 @@
         <!-- Detail sections injected by JS -->
         <div id="bookingDetails" class="space-y-3"></div>
 
+        <!-- Sheets sync status -->
+        <div id="sheetsStatus" class="hidden mt-4 flex items-center gap-2 text-[13px] text-muted"></div>
+
         <!-- Action buttons -->
-        <div class="flex gap-3 mt-6 no-print">
+        <div class="flex gap-3 mt-4 no-print">
           <button onclick="window.print()"
             class="flex-1 bg-white border border-subtle text-ink text-[14px] font-medium
                    py-2.5 rounded-lg hover:bg-accent transition flex items-center justify-center gap-2">
@@ -283,6 +286,39 @@
 
   <!-- ───── JavaScript ───── -->
   <script>
+    /* ── Google Sheets config ── */
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzPLACEHOLDER/exec';
+
+    async function sendToSheets(payload) {
+      const statusEl = document.getElementById('sheetsStatus');
+      statusEl.classList.remove('hidden');
+      statusEl.innerHTML = `
+        <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+        กำลังบันทึกข้อมูล...`;
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload),
+        });
+        statusEl.innerHTML = `
+          <svg class="w-3.5 h-3.5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span class="text-green-700">บันทึกลง Google Sheets แล้ว</span>`;
+      } catch {
+        statusEl.innerHTML = `
+          <svg class="w-3.5 h-3.5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+          <span class="text-red-500">บันทึกไม่สำเร็จ (ตรวจสอบ Apps Script URL)</span>`;
+      }
+    }
+
     /* ── Pricing tables ── */
     const PRICES = {
       wash:    { '9000': 500,  '12000': 600,  '18000': 800,  '24000': 1000 },
@@ -481,7 +517,23 @@
 
       document.getElementById('bookingNumber').textContent = `หมายเลขจอง: ${bookingNo}`;
       document.getElementById('bookingDetails').innerHTML = customerSection + serviceSection + summarySection;
+      document.getElementById('sheetsStatus').classList.add('hidden');
       document.getElementById('resultModal').classList.remove('hidden');
+
+      sendToSheets({
+        bookingNo,
+        bookingDate: new Date().toLocaleString('th-TH'),
+        name,
+        phone,
+        address,
+        serviceDate: thDate,
+        serviceTime: time + ' น.',
+        services: services.map(s => `${SERVICE_LABEL[s.type]} ${SIZE_LABEL[s.size]}`).join(', '),
+        distance: DIST_LABEL[dist],
+        serviceSum,
+        travelFee,
+        total,
+      });
     }
 
     /* ── Reset form ── */
