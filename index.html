@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>คำนวณค่าบริการแอร์</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: rgb(249, 249, 247);
+      color: #1A1A1A;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 16px;
+      flex: 1;
+    }
+
+    h1 { font-size: 23px; font-weight: 600; margin-bottom: 32px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+
+    @media (min-width: 1024px) {
+      .layout { grid-template-columns: 2fr 1fr; }
+    }
+
+    .left-col { display: flex; flex-direction: column; gap: 32px; }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .section-title svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+    .card {
+      background: #FFFFFF;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      padding: 16px;
+    }
+
+    .dashed-card {
+      border: 1px dashed rgba(0, 0, 0, 0.15);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      color: #888780;
+      font-size: 14px;
+    }
+
+    label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+
+    select, input[type="text"], input[type="tel"], input[type="date"], input[type="time"], input[type="number"] {
+      width: 100%;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 14px;
+      color: #1A1A1A;
+      background: #FFFFFF;
+      outline: none;
+      transition: box-shadow 0.15s;
+    }
+
+    select:focus, input:focus {
+      box-shadow: 0 0 0 2px #1A1A1A;
+    }
+
+    input::placeholder { color: #888780; }
+
+    .service-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .service-row .field { flex: 1; min-width: 120px; }
+
+    .service-items { display: flex; flex-direction: column; gap: 12px; }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: inherit;
+      border-radius: 8px;
+      border: 1px solid rgba(0,0,0,0.12);
+      background: #FFFFFF;
+      color: #1A1A1A;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-secondary:hover { background: #F1EFE8; }
+    .btn-secondary svg { width: 16px; height: 16px; }
+
+    .btn-icon {
+      padding: 8px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #888780;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      display: flex;
+      align-items: center;
+    }
+
+    .btn-icon:hover { background: #F1EFE8; color: #1A1A1A; }
+    .btn-icon svg { width: 20px; height: 20px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .service-row { flex-direction: column; align-items: stretch; }
+      .service-row .field { min-width: 0; }
+    }
+
+    .form-stack { display: flex; flex-direction: column; gap: 16px; }
+
+    .sticky-wrap { position: sticky; top: 24px; }
+
+    .summary-items { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+
+    .summary-row { display: flex; justify-content: space-between; }
+
+    .summary-divider {
+      border-top: 1px solid rgba(0,0,0,0.12);
+      padding-top: 12px;
+      margin-top: 4px;
+    }
+
+    .summary-total {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 16px;
+      border-top: 1px solid rgba(0,0,0,0.12);
+      padding-top: 8px;
+    }
+
+    .text-muted { color: #888780; }
+
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      background: #1A1A1A;
+      color: #FFFFFF;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: inherit;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      margin-top: 16px;
+    }
+
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:focus { outline: none; box-shadow: 0 0 0 2px #1A1A1A, 0 0 0 4px #FFFFFF; }
+
+    .hidden { display: none !important; }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+
+    .modal-box {
+      background: #FFFFFF;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+      max-width: 480px;
+      width: 100%;
+      padding: 24px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .modal-header h2 { font-size: 18px; font-weight: 600; }
+
+    .booking-id-box {
+      background: rgb(249, 249, 247);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .booking-id-box .label { font-size: 13px; color: #888780; margin-bottom: 4px; }
+    .booking-id-box .value { font-size: 20px; font-weight: 600; letter-spacing: 1px; }
+
+    .modal-section { margin-bottom: 12px; }
+    .modal-section .section-label { font-size: 12px; color: #888780; margin-bottom: 4px; }
+    .modal-section .info-name { font-size: 14px; font-weight: 500; }
+    .modal-section .info-detail { font-size: 14px; color: #888780; }
+
+    .summary-section { display: flex; flex-direction: column; gap: 4px; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>คำนวณค่าบริการแอร์</h1>
+
+    <div class="layout">
+
+      <div class="left-col">
+
+        <!-- Service Items -->
+        <section>
+          <div class="section-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.049.58.025 1.193-.14 1.743" /></svg>
+            รายการบริการ
+          </div>
+          <div id="serviceItems" class="service-items"></div>
+          <button type="button" onclick="addServiceItem()" class="btn-secondary" style="margin-top: 12px;">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+            เพิ่มรายการ
+          </button>
+        </section>
+
+        <!-- Distance -->
+        <section>
+          <div class="section-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+            ระยะทาง
+          </div>
+          <div class="card">
+            <label>เลือกระยะทาง</label>
+            <select id="distance" onchange="calculate()">
+              <option value="0">ภายในเขตบริการ (ฟรี)</option>
+              <option value="10">ไม่เกิน 10 กม. (+100 บาท)</option>
+              <option value="20">10 – 20 กม. (+200 บาท)</option>
+              <option value="30">20 – 30 กม. (+350 บาท)</option>
+              <option value="50">30 – 50 กม. (+500 บาท)</option>
+              <option value="100">มากกว่า 50 กม. (+800 บาท)</option>
+            </select>
+          </div>
+        </section>
+
+        <!-- Customer Info -->
+        <section>
+          <div class="section-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+            ข้อมูลลูกค้า
+          </div>
+          <div class="card form-stack">
+            <div class="form-grid">
+              <div>
+                <label>ชื่อ-นามสกุล</label>
+                <input type="text" id="custName" placeholder="กรอกชื่อลูกค้า" />
+              </div>
+              <div>
+                <label>เบอร์โทรศัพท์</label>
+                <input type="tel" id="custPhone" placeholder="0xx-xxx-xxxx" />
+              </div>
+            </div>
+            <div>
+              <label>ที่อยู่</label>
+              <input type="text" id="custAddress" placeholder="ที่อยู่สำหรับเข้าบริการ" />
+            </div>
+            <div class="form-grid">
+              <div>
+                <label>วันที่ให้บริการ</label>
+                <input type="date" id="serviceDate" />
+              </div>
+              <div>
+                <label>เวลา</label>
+                <input type="time" id="serviceTime" />
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right: Summary -->
+      <div>
+        <div class="sticky-wrap">
+          <div class="section-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>
+            สรุปรายการ
+          </div>
+
+          <div id="summaryEmpty" class="dashed-card">
+            เพิ่มรายการบริการเพื่อดูสรุปค่าใช้จ่าย
+          </div>
+
+          <div id="summaryCard" class="card hidden">
+            <div id="summaryItems" class="summary-items"></div>
+            <div class="summary-divider summary-section" style="margin-top: 12px;">
+              <div class="summary-row"><span class="text-muted">ค่าบริการรวม</span><span id="sumService">฿0</span></div>
+              <div class="summary-row"><span class="text-muted">ค่าเดินทาง</span><span id="sumTravel">฿0</span></div>
+              <div class="summary-total" style="margin-top: 8px;"><span>รวมทั้งหมด</span><span id="sumTotal">฿0</span></div>
+            </div>
+          </div>
+
+          <button type="button" onclick="confirmBooking()" class="btn-primary">
+            ยืนยันการจอง
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking Confirmation Modal -->
+  <div id="modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>ยืนยันการจองสำเร็จ</h2>
+        <button onclick="closeModal()" class="btn-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const SERVICES = {
+      clean:   { label: 'ล้างแอร์', icon: '💧' },
+      repair:  { label: 'ซ่อมแอร์', icon: '🔧' },
+      install: { label: 'ติดตั้งแอร์', icon: '📦' },
+    };
+
+    const SIZES = [
+      { value: '9000',  label: '9,000 BTU' },
+      { value: '12000', label: '12,000 BTU' },
+      { value: '18000', label: '18,000 BTU' },
+      { value: '24000', label: '24,000 BTU' },
+      { value: '30000', label: '30,000 BTU' },
+      { value: '36000', label: '36,000 BTU' },
+    ];
+
+    const RATES = {
+      clean:   { '9000': 400, '12000': 500, '18000': 700, '24000': 900, '30000': 1100, '36000': 1300 },
+      repair:  { '9000': 800, '12000': 1000, '18000': 1300, '24000': 1600, '30000': 1900, '36000': 2200 },
+      install: { '9000': 3500, '12000': 4000, '18000': 5000, '24000': 6000, '30000': 7500, '36000': 9000 },
+    };
+
+    const TRAVEL_COST = { '0': 0, '10': 100, '20': 200, '30': 350, '50': 500, '100': 800 };
+
+    let itemCounter = 0;
+
+    function addServiceItem() {
+      itemCounter++;
+      const id = itemCounter;
+      const container = document.getElementById('serviceItems');
+
+      const row = document.createElement('div');
+      row.id = 'item-' + id;
+      row.className = 'card service-row';
+      row.innerHTML =
+        '<div class="field">' +
+          '<label>ประเภทบริการ</label>' +
+          '<select data-role="service" onchange="calculate()">' +
+            '<option value="clean">💧 ล้างแอร์</option>' +
+            '<option value="repair">🔧 ซ่อมแอร์</option>' +
+            '<option value="install">📦 ติดตั้งแอร์</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label>ขนาดแอร์</label>' +
+          '<select data-role="size" onchange="calculate()">' +
+            SIZES.map(function(s) { return '<option value="' + s.value + '">' + s.label + '</option>'; }).join('') +
+          '</select>' +
+        '</div>' +
+        '<div class="field" style="max-width: 100px;">' +
+          '<label>จำนวน</label>' +
+          '<input type="number" data-role="qty" value="1" min="1" max="20" onchange="calculate()" oninput="calculate()" />' +
+        '</div>' +
+        '<button type="button" onclick="removeItem(' + id + ')" class="btn-icon" style="align-self: flex-end;">' +
+          '<svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>' +
+        '</button>';
+      container.appendChild(row);
+      calculate();
+    }
+
+    function removeItem(id) {
+      var el = document.getElementById('item-' + id);
+      if (el) el.remove();
+      calculate();
+    }
+
+    function getItems() {
+      var rows = document.querySelectorAll('#serviceItems > div');
+      var items = [];
+      rows.forEach(function(row) {
+        var service = row.querySelector('[data-role="service"]').value;
+        var size = row.querySelector('[data-role="size"]').value;
+        var qty = Math.max(1, parseInt(row.querySelector('[data-role="qty"]').value) || 1);
+        var price = RATES[service][size] * qty;
+        items.push({ service: service, size: size, qty: qty, price: price });
+      });
+      return items;
+    }
+
+    function calculate() {
+      var items = getItems();
+      var distKey = document.getElementById('distance').value;
+      var travel = TRAVEL_COST[distKey];
+      var serviceTotal = items.reduce(function(s, i) { return s + i.price; }, 0);
+
+      var summaryEmpty = document.getElementById('summaryEmpty');
+      var summaryCard = document.getElementById('summaryCard');
+
+      if (items.length === 0) {
+        summaryEmpty.classList.remove('hidden');
+        summaryCard.classList.add('hidden');
+        return;
+      }
+
+      summaryEmpty.classList.add('hidden');
+      summaryCard.classList.remove('hidden');
+
+      var total = serviceTotal + travel;
+
+      var itemsHtml = items.map(function(i) {
+        var sizeLabel = SIZES.find(function(s) { return s.value === i.size; }).label;
+        var svc = SERVICES[i.service];
+        return '<div class="summary-row"><span>' + svc.icon + ' ' + svc.label + ' ' + sizeLabel + ' x' + i.qty + '</span><span>฿' + i.price.toLocaleString() + '</span></div>';
+      }).join('');
+
+      document.getElementById('summaryItems').innerHTML = itemsHtml;
+      document.getElementById('sumService').textContent = '฿' + serviceTotal.toLocaleString();
+      document.getElementById('sumTravel').textContent = '฿' + travel.toLocaleString();
+      document.getElementById('sumTotal').textContent = '฿' + total.toLocaleString();
+    }
+
+    function generateBookingId() {
+      var now = new Date();
+      var y = now.getFullYear().toString().slice(-2);
+      var m = String(now.getMonth() + 1).padStart(2, '0');
+      var d = String(now.getDate()).padStart(2, '0');
+      var rand = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+      return 'AC' + y + m + d + '-' + rand;
+    }
+
+    function confirmBooking() {
+      var items = getItems();
+      if (items.length === 0) { alert('กรุณาเพิ่มรายการบริการอย่างน้อย 1 รายการ'); return; }
+
+      var name = document.getElementById('custName').value.trim();
+      var phone = document.getElementById('custPhone').value.trim();
+      var address = document.getElementById('custAddress').value.trim();
+      var date = document.getElementById('serviceDate').value;
+      var time = document.getElementById('serviceTime').value;
+
+      if (!name) { alert('กรุณากรอกชื่อลูกค้า'); return; }
+      if (!phone) { alert('กรุณากรอกเบอร์โทรศัพท์'); return; }
+      if (!address) { alert('กรุณากรอกที่อยู่'); return; }
+      if (!date) { alert('กรุณาเลือกวันที่ให้บริการ'); return; }
+      if (!time) { alert('กรุณาเลือกเวลา'); return; }
+
+      var distKey = document.getElementById('distance').value;
+      var travel = TRAVEL_COST[distKey];
+      var serviceTotal = items.reduce(function(s, i) { return s + i.price; }, 0);
+      var total = serviceTotal + travel;
+      var bookingId = generateBookingId();
+
+      var distLabel = document.getElementById('distance').selectedOptions[0].text;
+      var dateObj = new Date(date + 'T00:00:00');
+      var dateFormatted = dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+      var itemsHtml = items.map(function(i) {
+        var sizeLabel = SIZES.find(function(s) { return s.value === i.size; }).label;
+        var svc = SERVICES[i.service];
+        return '<div class="summary-row"><span>' + svc.icon + ' ' + svc.label + ' ' + sizeLabel + ' x' + i.qty + '</span><span>฿' + i.price.toLocaleString() + '</span></div>';
+      }).join('');
+
+      document.getElementById('modalContent').innerHTML =
+        '<div class="booking-id-box">' +
+          '<div class="label">หมายเลขจอง</div>' +
+          '<div class="value">' + bookingId + '</div>' +
+        '</div>' +
+        '<div class="modal-section">' +
+          '<div class="section-label">ข้อมูลลูกค้า</div>' +
+          '<div class="info-name">' + name + '</div>' +
+          '<div class="info-detail">' + phone + '</div>' +
+          '<div class="info-detail">' + address + '</div>' +
+        '</div>' +
+        '<div class="modal-section">' +
+          '<div class="section-label">วันเวลาให้บริการ</div>' +
+          '<div style="font-size:14px;">' + dateFormatted + ' เวลา ' + time + ' น.</div>' +
+        '</div>' +
+        '<div class="modal-section">' +
+          '<div class="section-label" style="margin-bottom:8px;">รายการบริการ</div>' +
+          itemsHtml +
+        '</div>' +
+        '<div class="summary-divider summary-section">' +
+          '<div class="summary-row"><span class="text-muted">ค่าบริการ</span><span>฿' + serviceTotal.toLocaleString() + '</span></div>' +
+          '<div class="summary-row"><span class="text-muted">ค่าเดินทาง (' + distLabel + ')</span><span>฿' + travel.toLocaleString() + '</span></div>' +
+          '<div class="summary-total" style="margin-top:8px;"><span>รวมทั้งหมด</span><span>฿' + total.toLocaleString() + '</span></div>' +
+        '</div>';
+
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+    }
+
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    addServiceItem();
+  </script>
+</body>
+</html>
