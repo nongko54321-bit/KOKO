@@ -299,21 +299,18 @@
         </svg>
         กำลังบันทึกข้อมูล...`;
       try {
-        const form = new URLSearchParams();
-        form.append('payload', JSON.stringify(payload));
-        const res = await fetch(APPS_SCRIPT_URL, {
+        const res  = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          body: form,
+          mode: 'no-cors',          /* GAS redirect ต้องใช้ no-cors */
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload),
         });
-        if (res.ok || res.type === 'opaque') {
-          statusEl.innerHTML = `
-            <svg class="w-3.5 h-3.5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-            </svg>
-            <span class="text-green-700">บันทึกลง Google Sheets แล้ว</span>`;
-        } else {
-          throw new Error('response not ok');
-        }
+        /* no-cors → response เป็น opaque อ่านไม่ได้ แต่ request ถูกส่งไปแล้ว */
+        statusEl.innerHTML = `
+          <svg class="w-3.5 h-3.5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span class="text-green-700">บันทึกลง Google Sheets แล้ว</span>`;
       } catch {
         statusEl.innerHTML = `
           <svg class="w-3.5 h-3.5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
